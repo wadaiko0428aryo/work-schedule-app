@@ -15,34 +15,64 @@
             <div class="header-title">
                 <img src="{{ asset('images/CoachTech_White.png') }}" alt="COACHTECH" class="header-title_logo">
             </div>
-            <div class="header-menu">
-                <div class="header-menu_link">
-                    <a href="{{ route('attendance') }}" class="header-link">
-                        勤怠
-                    </a>
-                </div>
-                <div class="header-menu_link">
-                    <a href="{{ route('attendance_list') }}" class="header-link">
-                        勤怠一覧
-                    </a>
-                </div>
-                <div class="header-menu_link">
-                    <a href="{{ route('request_list') }}" class="header-link">
-                        申請
-                    </a>
-                </div>
-                <div class="header-menu">
-                    <form action="{{ route('logout') }}" method="post">
-                        @csrf
-                        <input type="submit" value="ログアウト" class="header-link">
-                    </form>
-                </div>
-            </div>
-
+            @auth
+                @if(Auth::user()->is_admin)
+                    <div class="header-menu">
+                        <div class="header-menu_link">
+                            <a href="{{ route('admin.attendance_list') }}" class="header-link">
+                                勤怠一覧
+                            </a>
+                        </div>
+                        <div class="header-menu_link">
+                            <a href="{{ route('admin.staff_list') }}" class="header-link">
+                                スタッフ一覧
+                            </a>
+                        </div>
+                        <div class="header-menu_link">
+                            <a href="{{ route('admin.request_list') }}" class="header-link">
+                                申請一覧
+                            </a>
+                        </div>
+                        <div class="header-menu">
+                            <form action="{{ route('logout') }}" method="post">
+                                @csrf
+                                <input type="submit" value="ログアウト" class="header-link">
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <div class="header-menu">
+                        <div class="header-menu_link">
+                            <a href="{{ route('attendance') }}" class="header-link">
+                                勤怠
+                            </a>
+                        </div>
+                        <div class="header-menu_link">
+                            <a href="{{ route('attendance_list') }}" class="header-link">
+                                勤怠一覧
+                            </a>
+                        </div>
+                        <div class="header-menu_link">
+                            <a href="{{ route('request_list') }}" class="header-link">
+                                申請
+                            </a>
+                        </div>
+                        <div class="header-menu">
+                            <form action="{{ route('logout') }}" method="post">
+                                @csrf
+                                <input type="submit" value="ログアウト" class="header-link">
+                            </form>
+                        </div>
+                    </div>
+                @endif
+            @endauth
         </div>
     </div>
 
-    @yield('content')
+    <div class="content">
+        @yield('content')
+    </div>
+
 
 </body>
 </html>

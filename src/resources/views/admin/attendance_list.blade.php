@@ -6,4 +6,5 @@
 
 @section('content')
 勤怠一覧画面（管理者）
+<a href="{{ route('admin.attendance_detail') }}">勤怠詳細画面</a>
 @endsection

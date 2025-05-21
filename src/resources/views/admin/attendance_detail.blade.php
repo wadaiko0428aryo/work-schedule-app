@@ -5,5 +5,5 @@
 @endsection
 
 @section('content')
-スタッフ別勤怠一覧画面（管理者）
+勤怠詳細画面（管理者）
 @endsection

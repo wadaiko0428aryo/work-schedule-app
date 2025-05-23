@@ -17,4 +17,9 @@ class Attendance extends Model
         'break_start_time',
         'break_end_time',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

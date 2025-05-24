@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use App\Models\User;
 use App\Models\Attendance;
 
@@ -102,13 +103,23 @@ class AttendanceController extends Controller
 
 
 
-    public function attendance_list()
+    public function attendance_list(Request $request)
     {
         $user = Auth::user();
 
-        $attendances = Attendance::where('user_id', $user->id)
-        ->orderBy('date', 'desc')->get();
-        return view('attendance_list', compact('attendances'));
+        // クエリパラメータから日付を取得、なければ今日
+        $date = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
+
+        $previousDate = $date->copy()->subDay()->toDateString();
+        $nextDate = $date->copy()->addDay()->toDateString();
+        $currentDate = $date;
+
+        $attendances = Attendance::with('user')
+        ->whereDate('start_time', $date)
+        ->where('user_id', $user->id)
+        ->get();
+
+        return view('attendance_list', compact('attendances', 'date', 'previousDate', 'nextDate', 'currentDate'));
     }
 
     public function attendance_detail($attendance_id)
@@ -119,10 +130,18 @@ class AttendanceController extends Controller
     }
 
 
-
-    public function request_list()
+    public function request_list(Request $request)
     {
-        return view('request_list');
+        $user = Auth::user();
+        $status = $request->query('status', '申請中');
+
+        $attendances = Attendance::with('user')
+            ->where('status', $status)
+            ->where('user_id', $user->id) //login userのみにしぼる
+            ->get();
+
+
+        return view('request_list', compact('attendances', 'status'));
     }
 
 

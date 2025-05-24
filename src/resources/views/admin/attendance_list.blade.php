@@ -46,8 +46,8 @@
 
             <tr>
                 <td>{{ $attendance->user->name }}</td>
-                <td>{{ $attendance->start_time }}</td>
-                <td>{{ $attendance->end_time }}</td>
+                <td>{{ $workStart->format('H：i') }}</td>
+                <td>{{ $workEnd ? $workEnd->format('H：i') : '' }}</td>
                 <td>
                     @if ($breakStart && $breakEnd)
                         {{ floor($breakDuration / 60) }}:{{ $breakDuration % 60 }}

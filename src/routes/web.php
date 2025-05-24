@@ -15,7 +15,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/staff_list', [AdminController::class, 'staff_list'])->name('staff_list');
 
-    Route::get('/staff_attendance_list', [AdminController::class, 'staff_attendance_list'])->name('staff_attendance_list');
+    Route::get('/staff_list/staff_attendance_list/{user_id}', [AdminController::class, 'staff_attendance_list'])->name('staff_attendance_list');
 
     Route::get('/request_list', [AdminController::class, 'request_list'])->name('request_list');
 

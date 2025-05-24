@@ -8,12 +8,11 @@
 <div class="attendance-title">
     勤怠一覧
 </div>
-<form action="" method="get">
-    @csrf
-    <div class="search-form">
-        <input type="date" class="date-search">
-    </div>
-</form>
+<div class="date-navigation">
+    <a href="{{ route('attendance_list', ['date' => $previousDate]) }}">←前日</a>
+    <span>{{ $date->format('Y/m/d') }}</span>
+    <a href="{{ route('attendance_list', ['date' => $nextDate]) }}">翌日→</a>
+</div>
 
 <div class="attendance-table">
     <table border="1">
@@ -41,8 +40,8 @@
 
                 <tr>
                     <td>{{ $attendance->date }}</td>
-                    <td>{{ $attendance->start_time }}</td>
-                    <td>{{ $attendance->end_time }}</td>
+                    <td>{{ $workStart->format('H：i') }}</td>
+                    <td>{{ $workEnd ? $workEnd->format('H：i') : '' }}</td>
                     <td>
                         @if ($breakStart && $breakEnd)
                             {{ floor($breakDuration / 60) }}:{{ $breakDuration % 60 }}

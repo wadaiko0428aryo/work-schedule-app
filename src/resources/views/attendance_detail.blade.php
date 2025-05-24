@@ -21,16 +21,16 @@
             <div class="attendance-input">{{ \Carbon\Carbon::parse($attendance->date)->format('Y年m月d日') }}</div>
         </div>
         <div class="attendance-edit_input">
-            <label for="start_time-end_time" class="attendance-label">出勤・退勤</label>
-            <input type="time" name="start_time-end_time" id="start_time-end_time" value="{{ $attendance->start_time }}" placeholder="{{ $attendance->start_time }}" class="attendance-input">
+            <label for="start_time" class="attendance-label">出勤・退勤</label>
+            <input type="time" name="start_time" id="start_time" value="{{ \Carbon\Carbon::parse($attendance->start_time)->format('H:i') }}" class="attendance-input">
             <span>〜</span>
-            <input type="time" name="start_time-end_time" id="start_time-end_time" value="{{ $attendance->end_time }}" placeholder="{{ $attendance->end_time }}" class="attendance-input">
+            <input type="time" name="end_time" id="end_time" value="{{ $attendance->end_time ? \Carbon\Carbon::parse($attendance->end_time)->format('H:i') : '' }}" class="attendance-input">
         </div>
         <div class="attendance-edit_input">
-            <label for="break_start_time-break_end_time" class="attendance-label">休憩</label>
-            <input type="time" name="break_start_time-break_end_time" id="break_start_time-break_end_time" value="{{ $attendance->break_start_time }}" placeholder="{{ $attendance->break_start_time }}" class="attendance-input">
+            <label for="break_start_time" class="attendance-label">休憩</label>
+            <input type="time" name="break_start_time" id="break_start_time" value="{{ $attendance->break_start_time ? \Carbon\Carbon::parse($attendance->break_start_time)->format('H:i') : '' }}"  class="attendance-input">
             <span>〜</span>
-            <input type="time" name="break_start_time-break_end_time" id="break_start_time-break_end_time" value="{{ $attendance->break_end_time }}" placeholder="{{ $attendance->break_end_time }}" class="attendance-input">
+            <input type="time" name="break_end_time" id="break_end_time" value="{{ $attendance->break_end_time ? \Carbon\Carbon::parse($attendance->break_end_time)->format('H:i') : '' }}" class="attendance-input">
         </div>
         <div class="attendance-edit_input">
             <label for="break_start_time-break_end_time2" class="attendance-label">休憩2</label>

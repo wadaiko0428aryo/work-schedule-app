@@ -23,6 +23,7 @@ class CreateAttendancesTable extends Migration
             $table->dateTime('break_end_time')->nullable();
             $table->text('reason')->nullable();
             $table->string('status')->default('pending');
+            
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

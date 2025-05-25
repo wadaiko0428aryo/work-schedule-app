@@ -9,9 +9,9 @@
     勤怠一覧
 </div>
 <div class="date-navigation">
-    <a href="{{ route('attendance_list', ['date' => $previousDate]) }}">←前日</a>
-    <span>{{ $date->format('Y/m/d') }}</span>
-    <a href="{{ route('attendance_list', ['date' => $nextDate]) }}">翌日→</a>
+    <a href="{{ route('attendance_list', ['year' => $previousMonth->year, 'month' => $previousMonth->month]) }}">←前月</a>
+    <span>{{ $year }}年{{ $month }}月</span>
+    <a href="{{ route('attendance_list', ['year' => $nextMonth->year, 'month' => $nextMonth->month]) }}">翌月→</a>
 </div>
 
 <div class="attendance-table">

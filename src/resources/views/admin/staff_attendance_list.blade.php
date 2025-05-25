@@ -9,9 +9,9 @@
     {{$user->name}}さんの勤怠
 </div>
 <div class="date-navigation">
-<a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'date' => $previousDate]) }}">←前日</a>
-<span>{{ $date->format('Y/m/d') }}</span>
-<a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'date' => $nextDate]) }}">翌日→</a>
+    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $previousMonth->year, 'month' => $previousMonth->month]) }}">←前月</a>
+    <span>{{ $year }}年{{ $month }}月</span>
+    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $nextMonth->year, 'month' => $nextMonth->month]) }}">翌月→</a>
 </div>
 
 <div class="attendance-table">
@@ -53,7 +53,7 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('admin.attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
+                        <a href="{{ route('attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
                     </td>
                 </tr>
             @endforeach

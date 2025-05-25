@@ -1,13 +1,12 @@
 @extends('layouts.app')
 
 @section('css')
-<link rel="stylesheet" href="{{ asset('css/attendance_register.css') }}">
+<link rel="stylesheet" href="{{ asset('css/attendance.css') }}">
 @endsection
 
 @section('content')
 
 <div class="attendance-check">
-    <div class="attendance-check_label">
         @if($status === 'before_work')
             勤務外
         @elseif($status === 'working')
@@ -17,39 +16,38 @@
         @elseif($status === 'finished')
             退勤済
         @endif
-    </div>
 </div>
 
 <div class="attendance-date">
-    <div id="current-date" style="font-size: 1.2rem; font-weight: bold;"></div>
+    <div id="current-date" style="font-size: 2rem; margin: 30px 0;"></div>
 </div>
 
 <div class="attendance-time">
-    <div id="clock" style="font-size: 1.5rem; font-weight: bold;"></div>
+    <div id="clock" style="font-size: 3rem; font-weight: bold;"></div>
 </div>
 
 <div class="attendance-buttons">
     @if($status === 'before_work')
         <form method="POST" action="{{ route('attendance.start') }}">
             @csrf
-            <button type="submit">出勤</button>
+            <button class="btn-1" type="submit">出勤</button>
         </form>
     @elseif($status === 'working')
         <form method="POST" action="{{ route('attendance.break') }}">
             @csrf
-            <button type="submit">休憩</button>
+            <button class="btn-2"  type="submit">休憩入</button>
         </form>
         <form method="POST" action="{{ route('attendance.end') }}">
             @csrf
-            <button type="submit">退勤</button>
+            <button class="btn-1"  type="submit">退勤</button>
         </form>
     @elseif($status === 'on_break')
         <form method="POST" action="{{ route('attendance.resume') }}">
             @csrf
-            <button type="submit">休憩戻</button>
+            <button class="btn-2"  type="submit">休憩戻</button>
         </form>
     @elseif($status === 'finished')
-        <p>お疲れ様でした。</p>
+        <p class="text-1">お疲れ様でした。</p>
     @endif
 
 </div>

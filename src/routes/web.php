@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function()
 
     Route::get('/attendance_list/attendance_detail/{attendance_id}', [AttendanceController::class, 'attendance_detail'])->name('attendance_detail');
 
+    Route::post('/attendance_list/attendance_detail/{attendance_id}', [AttendanceController::class, 'attendance_update'])->name('attendance_update');
 
     Route::get('/request_list', [AttendanceController::class, 'request_list'])->name('request_list');
 

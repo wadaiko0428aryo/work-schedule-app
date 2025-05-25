@@ -5,11 +5,18 @@
 @endsection
 
 @section('content')
+
+@if (session('success'))
+    <div class="alert alert-success">
+        {{ session('success') }}
+    </div>
+@endif
+
 <div class="attendance-title">
     勤怠詳細
 </div>
 
-<form action="" method="post">
+<form action="{{ route('attendance_update', ['attendance_id' => $attendance->id]) }}" method="post">
     @csrf
     <div class="attendance-edit_group">
         <div class="attendance-edit_input">
@@ -40,11 +47,15 @@
         </div>
         <div class="attendance-edit_input">
             <label for="reason" class="attendance-label">備考</label>
-            <input type="text" name="reason" id="reason" placeholder="{{ old('reason') }}" class="attendance-input">
+            <input type="text" name="reason" id="reason" value="{{ old('reason', $attendance->reason) }}" class="attendance-input">
         </div>
     </div>
     <div class="edit-btn">
-        <input type="submit" value="修正" class="edit-btn_submit">
+        @if(Auth::user()->is_admin)
+            <input type="submit" value="修正admin" class="edit-btn_submit">
+        @else
+            <input type="submit" value="修正" class="edit-btn_submit">
+        @endif
     </div>
 </form>
 @endsection

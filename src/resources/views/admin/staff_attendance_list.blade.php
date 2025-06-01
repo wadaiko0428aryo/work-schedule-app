@@ -9,9 +9,9 @@
     {{$user->name}}さんの勤怠
 </div>
 <div class="date-navigation">
-    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $previousMonth->year, 'month' => $previousMonth->month]) }}">←前月</a>
-    <span>{{ $year }}年{{ $month }}月</span>
-    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $nextMonth->year, 'month' => $nextMonth->month]) }}">翌月→</a>
+    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $previousMonth->year, 'month' => $previousMonth->month]) }}" class="date-link">←前月</a>
+    <span class="date">{{ $year }}年{{ $month }}月</span>
+    <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $nextMonth->year, 'month' => $nextMonth->month]) }}" class="date-link">翌月→</a>
 </div>
 
 <div class="attendance-table">

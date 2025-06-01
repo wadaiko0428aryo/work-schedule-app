@@ -5,8 +5,14 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\AuthController;
 
 
+Route::post('/register', [AuthController::class, 'register'])->name('register');
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::get('/mail-check', [AuthController::class, 'mailCheck'])->name('mailCheck');
+Route::post('/send-token-email', [AuthController::class, 'sendTokenEmail'])->name('sendTokenEmail');
+Route::post('/auth', [AuthController::class, 'auth'])->name('auth');
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/attendance_list', [AdminController::class, 'attendance_list'])->name('attendance_list');

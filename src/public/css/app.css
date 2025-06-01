@@ -40,6 +40,67 @@ body{
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 50px;
     flex-direction: column;
+    width: 100%;
+    height: 100vh;
+}
+
+/* テーブルレイアウト */
+.attendance-title{
+    font-size: 30px;
+    font-weight: bold;
+    border-left: 8px solid black;
+    padding-left: 10px;
+    width: 60%;
+    margin-bottom: 30px;
+}
+
+.date-navigation{
+    width: 60%;
+    background-color: white;
+    margin: 20px;
+    border-radius: 5px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.date-link{
+    color: #737373;
+    text-decoration: none;
+    font-size: 16px;
+}
+.date{
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.attendance-table{
+    width: 60%;
+}
+
+table{
+    width: 100%;
+    background-color: white;
+    border: 0 solid white ;
+    border-radius: 5px;
+}
+
+tr{
+    border-bottom: 3px solid #E1E1E1;
+}
+
+th , td{
+    color: #737373;
+    text-align: center;
+    font-size: 16px;
+    font-weight: lighter;
+    padding: 10px 0;
+}
+
+.attendance-link{
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
 }

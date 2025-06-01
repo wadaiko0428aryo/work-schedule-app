@@ -69,6 +69,10 @@
         </div>
     </div>
 
+    <div class="session">
+        @yield('session')
+    </div>
+
     <div class="content">
         @yield('content')
     </div>

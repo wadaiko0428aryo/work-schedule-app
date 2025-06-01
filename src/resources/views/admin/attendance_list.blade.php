@@ -11,9 +11,9 @@
 
 
 <div class="date-navigation">
-    <a href="{{ route('admin.attendance_list', ['date' => $previousDate]) }}">←前日</a>
-    <span>{{ $date->format('Y/m/d') }}</span>
-    <a href="{{ route('admin.attendance_list', ['date' => $nextDate]) }}">翌日→</a>
+    <a href="{{ route('admin.attendance_list', ['date' => $previousDate]) }}" class="date-link">←前日</a>
+    <span class="date">{{ $date->format('Y/m/d') }}</span>
+    <a href="{{ route('admin.attendance_list', ['date' => $nextDate]) }}" class="date-link">翌日→</a>
 </div>
 
 <div class="attendance-table">

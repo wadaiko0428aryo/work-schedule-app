@@ -17,15 +17,20 @@ class CreateAttendancesTable extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->date('date')->nullable();
+
             $table->dateTime('start_time')->nullable();
             $table->dateTime('end_time')->nullable();
             $table->dateTime('break_start_time')->nullable();
             $table->dateTime('break_end_time')->nullable();
             $table->text('reason')->nullable();
-            $table->string('status')->default('pending');
-            
+
+            $table->boolean('is_approval')->default(false); //勤怠情報が管理者により承認されたか確認する。
+
+            $table->enum('status', ['pending', 'approved'])->default('pending');//状態を「pending（申請中）」か「approved（承認済み）」かでステータスを管理
+
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }

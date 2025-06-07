@@ -10,7 +10,6 @@ use App\Mail\TokenEmail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\VerificationMail;
 
 class AuthController extends Controller
 {
@@ -62,21 +61,28 @@ class AuthController extends Controller
                 return redirect()->route('admin.attendance_list')->with('message', '管理者としてログインしました');
             }
 
-            $onetime_token = strval(rand(1000, 9999));
-            $onetime_expiration = now()->addMinutes(10);
+            //  ここで「初回ログインかどうか」を判定
+            if (!$user->has_logged_in) {
+                $onetime_token = strval(rand(1000, 9999));
+                $onetime_expiration = now()->addMinutes(10);
 
-            $user->onetime_token = $onetime_token;
-            $user->onetime_expiration = $onetime_expiration;
-            $user->save();
+                $user->onetime_token = $onetime_token;
+                $user->onetime_expiration = $onetime_expiration;
+                $user->save();
 
-            Mail::to($user->email)->send(new TokenEmail($user->email, $onetime_token));
+                Mail::to($user->email)->send(new TokenEmail($user->email, $onetime_token));
 
-            session([
-                'email' => $user->email,
-                'referer' => 'login',
-            ]);
+                session([
+                    'email' => $user->email,
+                    'referer' => 'login',
+                ]);
 
-            return redirect()->route('mailCheck');
+                return redirect()->route('mailCheck');
+            }
+
+            // 初回ログイン済みならそのままログイン
+            Auth::login($user);
+            return redirect()->route('attendance')->with('message', "{$user->name} さんとしてログインしました");
         }
 
         return back()->withErrors(['email' => 'ログイン情報が正しくありません'])->withInput();
@@ -88,14 +94,21 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if ($user && $user->onetime_token == $request->onetime_token && now()->lessThanOrEqualTo($user->onetime_expiration)) {
+            // ログイン成功
             Auth::login($user);
+
+            // ★ ここで初回ログイン済みとして記録
+            $user->has_logged_in = true;
+            $user->onetime_token = null; // トークン破棄（任意）
+            $user->onetime_expiration = null;
+            $user->save();
 
             $referer = session('referer', 'login');
 
             if ($referer === 'register') {
-                return redirect()->route('attendance'); // プロフィール入力ページ
+                return redirect()->route('attendance');
             } else {
-                return redirect()->route('attendance')->with('message', 'さんのアカウントにログインしました');
+                return redirect()->route('attendance')->with('message', "{$user->name} さんとしてログインしました");
             }
         }
 
@@ -129,14 +142,25 @@ class AuthController extends Controller
         return view('auth.second-auth');
     }
 
-
-    public function sendVerification(Request $request)
+    public function resendToken(Request $request)
     {
-        $user = Auth::user();
+        $email = $request->email;
+        $user = User::where('email', $email)->first();
 
-        // メール送信（実行されているか確認）
-        Mail::to($user->email)->send(new VerificationMail($user));
+        if (!$user) {
+            return redirect()->back()->withErrors(['email' => 'ユーザーが見つかりません']);
+        }
 
-        return redirect()->route('mail.check');
+        $onetime_token = strval(rand(1000, 9999));
+        $onetime_expiration = now()->addMinutes(10);
+
+        $user->onetime_token = $onetime_token;
+        $user->onetime_expiration = $onetime_expiration;
+        $user->save();
+
+        Mail::to($email)->send(new TokenEmail($email, $onetime_token));
+
+        return back()->with('resent', true);
     }
+
 }

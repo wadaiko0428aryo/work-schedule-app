@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AttendanceRequest;
 
 class Attendance extends Model
 {
@@ -16,12 +17,22 @@ class Attendance extends Model
         'end_time',
         'break_start_time',
         'break_end_time',
-        'status',
-        'condition',
+        'reason',
+        'is_approval',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+        public function requests()
+    {
+        return $this->hasMany(AttendanceRequest::class);
+    }
+
+        public function latestRequest()
+    {
+        return $this->hasOne(AttendanceRequest::class)->latestOfMany();
     }
 }

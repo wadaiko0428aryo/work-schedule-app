@@ -21,6 +21,7 @@ class CreateUsersTable extends Migration
             $table->string('password');
             $table->string('role')->default('staff');
             $table->string('onetime_token')->nullable();
+            $table->boolean('has_logged_in')->default(false);  // 初回ログイン済みかどうか
             $table->timestamp('onetime_expiration')->nullable();
             $table->rememberToken();
             $table->timestamps();

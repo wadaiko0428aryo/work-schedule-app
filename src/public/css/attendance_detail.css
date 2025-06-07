@@ -66,4 +66,16 @@
     border-radius: 5px;
     color: white;
     font-size: 18px;
+    width: 150px;
+    text-align: center;
+}
+
+.edit-btn_submit.approved {
+    background-color: #696969;
+    color: white;
+    cursor: default;
+    display: inline-block;
+    text-align: center;
+    pointer-events: none;
+    /* クリック無効化 */
 }

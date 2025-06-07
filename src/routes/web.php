@@ -12,7 +12,11 @@ Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::get('/mail-check', [AuthController::class, 'mailCheck'])->name('mailCheck');
 Route::post('/send-token-email', [AuthController::class, 'sendTokenEmail'])->name('sendTokenEmail');
+// 認証コード再送信用
+Route::post('/resend-token', [AuthController::class, 'resendToken'])->name('resendToken');
 Route::post('/auth', [AuthController::class, 'auth'])->name('auth');
+
+
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/attendance_list', [AdminController::class, 'attendance_list'])->name('attendance_list');
@@ -23,11 +27,14 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/staff_list/staff_attendance_list/{user_id}', [AdminController::class, 'staff_attendance_list'])->name('staff_attendance_list');
 
-    Route::get('/request_list', [AdminController::class, 'request_list'])->name('request_list');
+
 
     Route::get('/approval', [AdminController::class, 'approval'])->name('approval');
+    Route::post('/approve/{attendance_id}', [AdminController::class, 'approve'])->name('attendance.approve');
 
 });
+
+
 
 Route::middleware('auth')->group(function()
 {
@@ -42,11 +49,16 @@ Route::middleware('auth')->group(function()
     Route::get('/attendance_list', [AttendanceController::class, 'attendance_list'])->name('attendance_list');
 
     Route::get('/attendance_list/attendance_detail/{attendance_id}', [AttendanceController::class, 'attendance_detail'])->name('attendance_detail');
+    Route::post('/attendance/request/{attendance_id}', [AttendanceController::class, 'request_edit'])->name('attendance.request_edit');
+
 
     Route::post('/attendance_list/attendance_detail/{attendance_id}', [AttendanceController::class, 'attendance_update'])->name('attendance_update');
 
     Route::get('/request_list', [AttendanceController::class, 'request_list'])->name('request_list');
 
+    Route::post('/approve/{attendance_id}', [AdminController::class, 'approve'])->name('admin.attendance.approve');
+
+    Route::get('/requested_confirm/{request_id}', [AttendanceController::class, 'requested_confirm'])->name('requested_confirm');
 
     Route::post('/logout', function (Request $request) {
         Auth::logout();

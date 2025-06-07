@@ -29,7 +29,7 @@
                             </a>
                         </div>
                         <div class="header-menu_link">
-                        <a href="{{ route('request_list') }}" class="header-link">
+                        <a href="{{ route('request_list', ['status' => 'pending']) }}" class="header-link">
                                 申請一覧
                             </a>
                         </div>
@@ -53,7 +53,7 @@
                             </a>
                         </div>
                         <div class="header-menu_link">
-                            <a href="{{ route('request_list') }}" class="header-link">
+                            <a href="{{ route('request_list', ['status' => 'pending']) }}" class="header-link">
                                 申請
                             </a>
                         </div>

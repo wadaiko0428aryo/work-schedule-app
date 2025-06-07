@@ -54,7 +54,11 @@
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
+                        @if($attendance->status === 'pending' && $attendance->latest_request)
+                            <a href="{{ route('requested_confirm', ['request_id' => $attendance->latest_request->id]) }}" class="attendance-link">詳細</a>
+                        @else
+                            <a href="{{ route('attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
+                        @endif
                     </td>
                 </tr>
             @endforeach

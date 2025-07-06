@@ -10,12 +10,10 @@
 </div>
 
 <div class="request-link_group">
-    <span class="request">
-        <a href="{{ route('request_list', ['status' => 'pending']) }}" class="request-link">申請待ち</a>
-    </span>
-    <span class="request">
-        <a href="{{ route('request_list', ['status' => 'approved']) }}" class="request-link">承認済み</a>
-    </span>
+    <div class="request">
+        <a href="{{ route('request_list', ['status' => 'pending']) }}" class="request-link {{ $status === 'pending' ? 'active' : '' }}">申請待ち</a>
+        <a href="{{ route('request_list', ['status' => 'approved']) }}" class="request-link {{ $status === 'approved' ? 'active' : '' }}">承認済み</a>
+    </div>
 </div>
 
 <div class="attendance-table">
@@ -53,12 +51,12 @@
         <tr>
             <td>{{ $request->status === 'pending' ? '申請中' : '承認済み' }}</td>
             <td>{{ $request->user->name }}</td>
-            <td>{{ $request->attendance->date }}</td>
+            <td>{{ \Carbon\Carbon::parse($request->attendance->date)->format('Y/m/d') }}</td>
             <td>{{ $request->requested_reason }}</td>
-            <td>{{ $request->updated_at }}</td>
+            <td>{{ $request->updated_at->format('Y/m/d') }}</td>
             <td>
                 @if($user->is_admin)
-                    <a href="{{ route('requested_confirm', ['request_id' => $request->id]) }}">確認</a>
+                    <a href="{{ route('requested_confirm', ['request_id' => $request->id]) }}" class="attendance-link">詳細</a>
                 @else
                     <a href="{{ route('requested_confirm', ['request_id' => $request->id]) }}" class="attendance-link">詳細</a>
                 @endif

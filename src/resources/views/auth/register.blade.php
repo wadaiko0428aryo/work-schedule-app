@@ -18,7 +18,7 @@
             <input type="name" id="name" name="name" value="{{ old('name') }}" class="auth-input-data">
             <div class="error">
                 @error('name')
-                    
+                    {{ $message }}
                 @enderror
             </div>
         </div>
@@ -27,7 +27,7 @@
             <input type="email" id="email" name="email" value="{{ old('email') }}" class="auth-input-data">
             <div class="error">
                 @error('email')
-                    error
+                    {{ $message }}
                 @enderror
             </div>
         </div>
@@ -36,7 +36,7 @@
             <input type="password" id="password" name="password" value="{{ old('password') }}" class="auth-input-data">
             <div class="error">
                 @error('password')
-                    error
+                    {{ $message }}
                 @enderror
             </div>
         </div>
@@ -44,8 +44,8 @@
             <label for="password_confirmation" class="auth-label">パスワード</label>
             <input type="password" id="password_confirmation" name="password_confirmation" value="{{ old('password_confirmation') }}" class="auth-input-data">
             <div class="error">
-                @error('password_confirmation')
-                    error
+                @error('password')
+                    {{ $message }}
                 @enderror
             </div>
         </div>

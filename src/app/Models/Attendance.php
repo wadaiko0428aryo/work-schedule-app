@@ -15,10 +15,12 @@ class Attendance extends Model
         'date',
         'start_time',
         'end_time',
-        'break_start_time',
-        'break_end_time',
         'reason',
         'is_approval',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
     ];
 
     public function user()
@@ -34,5 +36,10 @@ class Attendance extends Model
         public function latestRequest()
     {
         return $this->hasOne(AttendanceRequest::class)->latestOfMany();
+    }
+
+    public function rests()
+    {
+        return $this->hasMany(Rest::class);
     }
 }

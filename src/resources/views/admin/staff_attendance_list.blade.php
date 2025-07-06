@@ -5,17 +5,17 @@
 @endsection
 
 @section('content')
-<div class="attendance-title">
+<div class="attendance-title attendance-list_title">
     {{$user->name}}さんの勤怠
 </div>
 <div class="date-navigation">
     <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $previousMonth->year, 'month' => $previousMonth->month]) }}" class="date-link">←前月</a>
-    <span class="date">{{ $year }}年{{ $month }}月</span>
+    <span class="date">{{ $year }}/{{ $month }}</span>
     <a href="{{ route('admin.staff_attendance_list', ['user_id' => $user->id, 'year' => $nextMonth->year, 'month' => $nextMonth->month]) }}" class="date-link">翌月→</a>
 </div>
 
 <div class="attendance-table">
-    <table border="1">
+    <table>
         <thead>
             <tr>
                 <th>日付</th>
@@ -27,37 +27,59 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($attendances as $attendance)
-                @php
-                    $workStart = \Carbon\Carbon::parse($attendance->start_time);
-                    $workEnd = $attendance->end_time ? \Carbon\Carbon::parse($attendance->end_time) : null;
-                    $breakStart = $attendance->break_start_time ? \Carbon\Carbon::parse($attendance->break_start_time) : null;
-                    $breakEnd = $attendance->break_end_time ? \Carbon\Carbon::parse($attendance->break_end_time) : null;
+            @for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay())
+            @php
+                $attendance = $attendances->get($date->toDateString());
+                $workStart = $attendance && $attendance->start_time ? \Carbon\Carbon::parse($attendance->start_time) : null;
+                $workEnd = $attendance && $attendance->end_time ? \Carbon\Carbon::parse($attendance->end_time) : null;
 
-                    $breakDuration = ($breakStart && $breakEnd) ? $breakStart->diffInMinutes($breakEnd) : 0;
-                    $totalDuration = ($workStart && $workEnd) ? $workStart->diffInMinutes($workEnd) - $breakDuration : 0;
-                @endphp
+                $breakDuration = 0;
+                if ($attendance) {
+                    foreach ($attendance->rests as $rest) {
+                        if ($rest->break_start_time && $rest->break_end_time) {
+                            $breakDuration += \Carbon\Carbon::parse($rest->break_start_time)
+                                ->diffInMinutes(\Carbon\Carbon::parse($rest->break_end_time));
+                        }
+                    }
+                }
+                $totalDuration = ($workStart && $workEnd) ? $workStart->diffInMinutes($workEnd) - $breakDuration : 0;
+            @endphp
 
                 <tr>
-                    <td>{{ $attendance->date }}</td>
-                    <td>{{ $workStart->format('H：i') }}</td>
-                    <td>{{ $workEnd ? $workEnd->format('H：i') : '' }}</td>
+                <td>
+                    {{ $date->format('n/j') }}（{{ ['日','月','火','水','木','金','土'][$date->dayOfWeek] }}）
+                </td>
+                    <td>{{ $workStart ? $workStart->format('H:i') : '' }}</td>
+                    <td>{{ $workEnd ? $workEnd->format('H:i') : '' }}</td>
                     <td>
-                        @if ($breakStart && $breakEnd)
-                            {{ floor($breakDuration / 60) }}:{{ $breakDuration % 60 }}
+                        @if ($breakDuration > 0)
+                            {{ floor($breakDuration / 60) }}:{{ sprintf('%02d', $breakDuration % 60) }}
                         @endif
                     </td>
                     <td>
                         @if ($totalDuration > 0)
-                            {{ floor($totalDuration / 60) }}:{{ $totalDuration % 60 }}
+                            {{ floor($totalDuration / 60) }}:{{ sprintf('%02d', $totalDuration % 60) }}
                         @endif
                     </td>
                     <td>
-                        <a href="{{ route('attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
+                        @if ($attendance)
+                            @if($attendance->status === 'pending' && $attendance->latest_request)
+                                <a href="{{ route('requested_confirm', ['request_id' => $attendance->latest_request->id]) }}" class="attendance-link">詳細</a>
+                            @else
+                                <a href="{{ route('attendance_detail', ['attendance_id' => $attendance->id]) }}" class="attendance-link">詳細</a>
+                            @endif
+                        @endif
                     </td>
                 </tr>
-            @endforeach
+            @endfor
         </tbody>
     </table>
+</div>
+<div class="csv-export">
+    <a href="{{ route('admin.staff_attendance_list.export', [
+        'user_id' => $user->id,
+        'year' => $year,
+        'month' => $month
+    ]) }}" class="csv-button">CSV出力</a>
 </div>
 @endsection

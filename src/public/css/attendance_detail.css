@@ -13,12 +13,31 @@
 }
 
 .attendance-edit_input{
-    border-bottom: 3px solid #E1E1E1;;
+    border-bottom: 3px solid #E1E1E1;
     display: flex;
     align-items: center;
     padding: 20px 0;
     width: 100%;
 }
+.attendance-rests-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-bottom: 3px solid #E1E1E1;
+}
+
+.rest-block {
+    padding: 20px 0;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    width: 100%;
+}
+.rest-block:not(:last-child) {
+    border-bottom: 3px solid #E1E1E1;
+}
+
+
 
 .attendance-label{
     color: #737373;
@@ -32,9 +51,19 @@
 }
 
 .attendance-input-wrapper{
-    width: 400px;
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+.attendance-input-wrapper .column {
+    margin-left: 10px;
+}
+
+.column{
+    display: flex;
+    flex-direction: column;
 }
 
 .attendance-input{

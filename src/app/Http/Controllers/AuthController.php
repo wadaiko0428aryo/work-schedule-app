@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\MailRequest;
 use App\Models\User;
 use App\Mail\TokenEmail;
 use Illuminate\Support\Facades\Hash;
@@ -40,6 +41,7 @@ class AuthController extends Controller
 
         return redirect()->route('mailCheck');
     }
+
 
     // メール送信確認ページ
     public function mailCheck()
@@ -89,7 +91,7 @@ class AuthController extends Controller
     }
 
     // トークン認証処理
-    public function auth(Request $request)
+    public function auth(MailRequest $request)
     {
         $user = User::where('email', $request->email)->first();
 
@@ -112,7 +114,7 @@ class AuthController extends Controller
             }
         }
 
-        return redirect()->route('login')->withErrors(['token' => '無効なトークンです']);
+        return redirect()->route('mailCheck')->withErrors(['onetime_token' => '認証コードが正しくありません']);
     }
 
     // トークン付きメール送信（再送信・任意送信用）

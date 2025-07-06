@@ -33,11 +33,14 @@
         @php
             $workStart = \Carbon\Carbon::parse($attendance->start_time);
             $workEnd = $attendance->end_time ? \Carbon\Carbon::parse($attendance->end_time) : null;
-            $breakStart = $attendance->break_start_time ? \Carbon\Carbon::parse($attendance->break_start_time) : null;
-            $breakEnd = $attendance->break_end_time ? \Carbon\Carbon::parse($attendance->break_end_time) : null;
 
-            $breakDuration = ($breakStart && $breakEnd) ? $breakStart->diffInMinutes($breakEnd) : 0;
-            $totalDuration = ($workStart && $workEnd) ? $workStart->diffInMinutes($workEnd) - $breakDuration : 0;
+            $totalBreakMinutes = 0;
+            foreach ($attendance->rests as $rest) {
+                $totalBreakMinutes += \Carbon\Carbon::parse($rest->break_end_time)
+                    ->diffInMinutes(\Carbon\Carbon::parse($rest->break_start_time));
+            }
+
+            $totalDuration = ($workStart && $workEnd) ? $workStart->diffInMinutes($workEnd) - $totalBreakMinutes : 0;
 
             $currentDate = \Carbon\Carbon::parse($date);
             $previousDate = $currentDate->copy()->subDay()->toDateString();
@@ -46,16 +49,16 @@
 
             <tr>
                 <td>{{ $attendance->user->name }}</td>
-                <td>{{ $workStart->format('H：i') }}</td>
-                <td>{{ $workEnd ? $workEnd->format('H：i') : '' }}</td>
+                <td>{{ $workStart->format('H:i') }}</td>
+                <td>{{ $workEnd ? $workEnd->format('H:i') : '' }}</td>
                 <td>
-                    @if ($breakStart && $breakEnd)
-                        {{ floor($breakDuration / 60) }}:{{ $breakDuration % 60 }}
+                    @if ($totalBreakMinutes > 0)
+                        {{ floor($totalBreakMinutes / 60) }}：{{ sprintf('%02d', $totalBreakMinutes % 60) }}
                     @endif
                 </td>
                 <td>
                     @if ($totalDuration > 0)
-                        {{ floor($totalDuration / 60) }}:{{ $totalDuration % 60 }}
+                        {{ floor($totalDuration / 60) }}：{{ sprintf('%02d', $totalDuration % 60) }}
                     @endif
                 </td>
                 <td>

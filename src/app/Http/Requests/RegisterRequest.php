@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 
 class RegisterRequest extends FormRequest
 {
@@ -24,9 +25,23 @@ class RegisterRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:50',
+            'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|min:8|confirmed',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'name.required' => 'お名前を入力してください',
+            'name.string' => 'お名前を文字列で入力してください',
+            'email.required' => 'メールアドレスを入力してください',
+            'email.email' => '有効なメールアドレスを入力してください',
+            'email.unique' => 'このメールアドレスは既に使われています',
+            'password.required' => 'パスワードを入力してください',
+            'password.min' => 'パスワードは８文字以上で入力してください',
+            'password.confirmed' => 'パスワードと一致しません',
         ];
     }
 }

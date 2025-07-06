@@ -8,10 +8,13 @@ use Illuminate\Support\Carbon;
 use App\Models\User;
 use App\Models\Attendance;
 use App\Models\AttendanceRequest;
+use App\Models\Rest;
+use App\Http\Requests\AttendanceRequest as AttendanceRequestFrom;
+
 
 class AttendanceController extends Controller
 {
-    // 勤怠登録画面の表示
+    // ①勤怠登録画面の表示
     public function attendance()
     {
         $user = Auth::user();
@@ -21,18 +24,24 @@ class AttendanceController extends Controller
             ->whereDate('date', now()->toDateString())
             ->first();
 
-        // 初期値を設定しておく
+        // 初期値
         $status = 'before_work';
 
         if ($attendance) {
-            if ($attendance->start_time && !$attendance->end_time &&
-                (!$attendance->break_start_time || ($attendance->break_start_time && $attendance->break_end_time))) {
-                // 出勤していて、退勤しておらず、休憩中ではない
-                $status = 'working';
-            } elseif ($attendance->break_start_time && !$attendance->break_end_time) {
-                // 休憩開始していて、まだ終わってない
+
+            // 休憩状態をbreaksテーブルから取得
+            $latest_break = $attendance->rests()->latest()->first();
+
+            if ($latest_break && !$latest_break->break_end_time) {
+                // 休憩中
                 $status = 'on_break';
-            } elseif ($attendance->end_time) {
+            }
+            elseif ($attendance->start_time && !$attendance->end_time) {
+                // 勤務中
+                $status = 'working';
+            }
+            elseif ($attendance->end_time) {
+                // 退勤済み
                 $status = 'finished';
             }
         }
@@ -40,7 +49,7 @@ class AttendanceController extends Controller
         return view('attendance', compact('attendance', 'status'));
     }
 
-    // 出勤処理
+    // ②出勤処理
     public function start(Request $request)
     {
         $user = Auth::user();
@@ -54,7 +63,7 @@ class AttendanceController extends Controller
         return redirect()->route('attendance');
     }
 
-    // 退勤処理
+    // ③退勤処理
     public function end(Request $request)
     {
         $user = Auth::user();
@@ -71,40 +80,51 @@ class AttendanceController extends Controller
         return redirect()->route('attendance');
     }
 
-    // 休憩開始処理
+    // ④休憩開始処理
     public function break(Request $request)
     {
         $user = Auth::user();
 
         $attendance = Attendance::where('user_id', $user->id)->whereDate('date', now()->toDateString())->first();
 
-        if($attendance && !$attendance->break_start_time)
+        // すでに未終了の休憩がないことを確認
+        if($attendance->rests()->whereNull('break_end_time')->exists())
         {
-            $attendance->break_start_time = now();
-            $attendance->save();
+            return back()->with('error', '既に休憩中です');
         }
+
+        // 新しい休憩レコードを作成
+        $attendance->rests()->create([
+            'break_start_time' => now(),
+        ]);
 
         return redirect()->route('attendance');
     }
 
-    // 休憩終了処理
+    // ⑤休憩終了処理
     public function resume(Request $request)
     {
         $user = Auth::user();
 
         $attendance = Attendance::where('user_id', $user->id)->whereDate('date', now()->toDateString())->first();
 
-        if($attendance && !$attendance->break_end_time)
+        // 未終了の休憩を取得
+        $rest = $attendance->rests()->whereNull('break_end_time')->latest()->first();
+
+        if(!$rest)
         {
-            $attendance->break_end_time = now();
-            $attendance->save();
+            return back()->with('error', '休憩中ではありません');
         }
+
+        $rest->update([
+            'break_end_time' => now(),
+        ]);
 
         return redirect()->route('attendance');
     }
 
 
-    // 勤怠一覧画面の表示
+    // ⑥勤怠一覧画面の表示
     public function attendance_list(Request $request)
     {
         $user = Auth::user();
@@ -114,7 +134,7 @@ class AttendanceController extends Controller
         $month = $request->query('month') ? (int)$request->query('month') : now()->month;
 
 
-        // 表示対象の月の開始日と終了日
+        // 月初・月末
         $startOfMonth = Carbon::create($year, $month)->startOfMonth();
         $endOfMonth = Carbon::create($year, $month)->endOfMonth();
 
@@ -122,11 +142,17 @@ class AttendanceController extends Controller
         $previousMonth = $startOfMonth->copy()->subMonth();
         $nextMonth = $startOfMonth->copy()->addMonth();
 
+
          // 勤怠データ取得（start_time が該当月にあるもの）
-        $attendances = Attendance::with('user')
+        $attendances = Attendance::with('user', 'rests')
         ->whereBetween('start_time', [$startOfMonth, $endOfMonth])
         ->where('user_id', $user->id)
         ->get();
+
+        // 日付をキーにした連想配列にする
+        $attendances = $attendances->keyBy(function ($attendance) {
+            return Carbon::parse($attendance->start_time)->toDateString();
+        });
 
         // 各勤怠に最新リクエストを付与
         foreach ($attendances as $attendance) {
@@ -134,19 +160,20 @@ class AttendanceController extends Controller
         }
 
         return view('attendance_list', compact(
-            'user', 'attendances', 'year', 'month', 'previousMonth', 'nextMonth'
+            'user', 'attendances', 'year', 'month',
+            'previousMonth', 'nextMonth', 'startOfMonth', 'endOfMonth'
         ));
 
     }
 
 
 
-    // 勤怠詳細画面の表示（一般、admin兼用）
+    // ⑦勤怠詳細画面の表示（一般、admin兼用）
     public function attendance_detail($attendance_id)
     {
         $user = Auth::user();
 
-        $attendance = Attendance::with('user')->find($attendance_id);
+        $attendance = Attendance::with('user', 'rests')->find($attendance_id);
         $attendance->refresh(); // ←最新状態にする
 
         // アクセス制限：管理者以外は自分の勤怠のみ
@@ -154,58 +181,76 @@ class AttendanceController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        return view('attendance_detail', compact('attendance', 'user'));
+        $rests = $attendance->rests->toArray();
+        $rests[] = ['break_start_time' => null, 'break_end_time' => null];
+
+        return view('attendance_detail', compact('attendance', 'user', 'rests'));
     }
 
 
 
 
-    // 勤怠データ修正（admin）と修正＆申請（一般）
-    public function attendance_update(Request $request, $attendance_id)
+    // ⑧勤怠データ修正(admin)
+    public function attendance_update(AttendanceRequestFrom $request, $attendance_id)
     {
-        $attendance = Attendance::findOrFail($attendance_id);
+        $attendance = Attendance::with('rests')->findOrFail($attendance_id);
         $user = Auth::user();
 
-        // 管理者は誰の勤怠でも編集可能、staffは自分の勤怠のみ編集可能
+        // 管理者は誰の勤怠でも編集可能、staffは自分の勤怠のみ
         if (!$user->is_admin && $attendance->user_id !== $user->id) {
             abort(403, 'Unauthorized update.');
         }
 
-        // 日付情報（元の勤怠日付）
+        // 日付（既存の勤怠日付）
         $date = \Carbon\Carbon::parse($attendance->start_time)->toDateString();
 
-        // 時刻だけ更新用に結合
+        // 出勤・退勤更新
         if ($request->start_time) {
             $attendance->start_time = $date . ' ' . $request->start_time;
         }
         if ($request->end_time) {
             $attendance->end_time = $date . ' ' . $request->end_time;
         }
-        if ($request->break_start_time) {
-            $attendance->break_start_time = $date . ' ' . $request->break_start_time;
-        }
-        if ($request->break_end_time) {
-            $attendance->break_end_time = $date . ' ' . $request->break_end_time;
-        }
 
         $attendance->reason = $request->reason;
 
-        // is_adminがfalseの場合、ユーザーが申請すると自動的に「申請中」になる
+        // 一般ユーザーだけステータス変更
         if (!$user->is_admin) {
             $attendance->is_approval = false;
             $attendance->status = 'pending';
         }
 
-        $attendance->save(); //修正したデータを保存
+        $attendance->save();
 
-        return redirect()->route('attendance_detail', ['attendance_id' => $attendance->id])->with('success', '勤怠を更新しました。');
+        // 既存休憩を一度削除して再登録
+        $attendance->rests()->delete();
+
+        $break_start_times = $request->break_start_time ?? [];
+        $break_end_times = $request->break_end_time ?? [];
+
+        foreach ($break_start_times as $index => $start_time) {
+            $end_time = $break_end_times[$index] ?? null;
+
+            // 両方空ならスキップ
+            if (!$start_time && !$end_time) {
+                continue;
+            }
+
+            $attendance->rests()->create([
+                'break_start_time' => $start_time ? $date . ' ' . $start_time : null,
+                'break_end_time'   => $end_time ? $date . ' ' . $end_time : null,
+            ]);
+        }
+
+        return redirect()->route('attendance_detail', ['attendance_id' => $attendance->id])
+            ->with('success', '勤怠を更新しました。');
     }
 
 
 
 
 
-    // 勤怠申請画面の表示、admin時の表示も記載
+    // ⑨勤怠申請画面の表示、admin時の表示も記載
     public function request_list(Request $request)
     {
         // ログインユーザー（staff）を取得
@@ -225,7 +270,9 @@ class AttendanceController extends Controller
             return view('request_list', compact('requests', 'status', 'user'));
     }
 
-    public function request_edit(Request $request, $attendance_id)
+
+    // 🔟修正申請機能
+    public function request_edit(AttendanceRequestFrom $request, $attendance_id)
     {
         $attendance = Attendance::findOrFail($attendance_id);
         $user = Auth::user();
@@ -234,50 +281,63 @@ class AttendanceController extends Controller
         if ($user->is_admin || $attendance->user_id !== $user->id) {
             abort(403, 'Unauthorized');
         }
-        // 勤怠の基準日付を取得
         $baseDate = \Carbon\Carbon::parse($attendance->date)->toDateString();
 
-        // 修正データをまとめて保存
-        $editData = [];
+        // 修正データのベース配列
+        $editData = [
+            'start_time' => $request->start_time ? $baseDate . ' ' . $request->start_time : null,
+            'end_time' => $request->end_time ? $baseDate . ' ' . $request->end_time : null,
+            'breaks' => [],  // 複数休憩用
+        ];
 
-        if ($request->start_time) $editData['start_time'] = $baseDate . ' ' . $request->start_time;
-        if ($request->end_time) $editData['end_time'] = $baseDate . ' ' . $request->end_time;
-        if ($request->break_start_time) $editData['break_start_time'] = $baseDate . ' ' . $request->break_start_time;
-        if ($request->break_end_time) $editData['break_end_time'] = $baseDate . ' ' . $request->break_end_time;
-        if ($request->break2_start_time) $editData['break2_start_time'] = $baseDate . ' ' . $request->break2_start_time;
-        if ($request->break2_end_time) $editData['break2_end_time'] = $baseDate . ' ' . $request->break2_end_time;
+        // 休憩を editData にも追加
+        $breakStartTimes = $request->break_start_time ?? [];
+        $breakEndTimes = $request->break_end_time ?? [];
 
-        // 申請レコードを保存
-        AttendanceRequest::create([
+        $attendanceRequest = AttendanceRequest::create([
             'user_id' => $user->id,
             'attendance_id' => $attendance->id,
             'date' => $attendance->date,
             'reason' => $request->reason,
             'status' => 'pending',
-            'requested_start_time' => $request->start_time ? $baseDate . ' ' . $request->start_time : null,
-            'requested_end_time' => $request->end_time ? $baseDate . ' ' . $request->end_time : null,
-            'requested_break_start_time' => $request->break_start_time ? $baseDate . ' ' . $request->break_start_time : null,
-            'requested_break_end_time' => $request->break_end_time ? $baseDate . ' ' . $request->break_end_time : null,
+            'requested_start_time' => $editData['start_time'],
+            'requested_end_time' => $editData['end_time'],
             'requested_reason' => $request->reason,
             'edit_data' => json_encode($editData),
         ]);
 
-        // 勤怠側のステータスを「申請中」に変更
+        // 複数休憩時間の配列は必ず同じ数で届く想定でループ処理
+        $breakStartTimes = $request->break_start_time ?? [];
+        $breakEndTimes = $request->break_end_time ?? [];
+
+        foreach ($breakStartTimes as $index => $breakStart) {
+            // 空の時間は無視（休憩が入ってない場合）
+            if (!$breakStart) continue;
+
+                $end_time = $breakEndTimes[$index] ?? null;
+
+                $attendanceRequest->breakRequests()->create([
+                    'attendance_id' => $attendance->id,
+                    'requested_break_start_time' => $baseDate . ' ' . $breakStart,
+                    'requested_break_end_time' => $end_time ? $baseDate . ' ' . $end_time : null,
+                    'status' => 'pending',
+                ]);
+            }
+
+
+        // 勤怠側のステータスを申請中に変更
         $attendance->is_approval = false;
         $attendance->status = 'pending';
         $attendance->save();
 
-        // 最新のリクエストを取得してリダイレクト
-        $latestRequest = AttendanceRequest::where('attendance_id', $attendance->id)->latest()->first();
-
-
-        return redirect()->route('requested_confirm', ['request_id' => $latestRequest->id])
-        ->with('success', '修正申請を送信しました。');
+        return redirect()->route('requested_confirm', ['request_id' => $attendanceRequest->id])
+            ->with('success', '修正申請を送信しました。');
     }
 
+    // 11.修正内容確認画面
     public function requested_confirm($request_id)
     {
-        $request = AttendanceRequest::with('attendance.user')->findOrFail($request_id);
+        $request = AttendanceRequest::with('attendance.user', 'breakRequests')->findOrFail($request_id);
 
         $attendance = $request->attendance;
 

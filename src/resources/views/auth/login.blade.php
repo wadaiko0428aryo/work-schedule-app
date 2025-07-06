@@ -17,7 +17,7 @@
             <input type="email" id="email" name="email" value="{{ old('email') }}" class="auth-input-data">
             <div class="error">
                 @error('email')
-                    error
+                    {{ $message }}
                 @enderror
             </div>
         </div>
@@ -26,7 +26,7 @@
             <input type="password" id="password" name="password" value="{{ old('password') }}" class="auth-input-data">
             <div class="error">
                 @error('password')
-                    error
+                    {{ $message }}
                 @enderror
             </div>
         </div>

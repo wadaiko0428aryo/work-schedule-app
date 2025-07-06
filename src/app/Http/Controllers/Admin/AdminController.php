@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\Attendance;
+use App\Models\Rest;
+use App\Models\BreakRequest;
 use App\Models\AttendanceRequest;
 
 class AdminController extends Controller
@@ -48,7 +51,7 @@ class AdminController extends Controller
         $month = $request->query('month') ? (int)$request->query('month') : now()->month;
 
 
-        // 表示対象の月の開始日と終了日
+        // 月始・月末
         $startOfMonth = Carbon::create($year, $month)->startOfMonth();
         $endOfMonth = Carbon::create($year, $month)->endOfMonth();
 
@@ -57,62 +60,174 @@ class AdminController extends Controller
         $nextMonth = $startOfMonth->copy()->addMonth();
 
          // 勤怠データ取得（start_time が該当月にあるもの）
-        $attendances = Attendance::with('user')
+        $attendances = Attendance::with('user', 'rests')
         ->whereBetween('start_time', [$startOfMonth, $endOfMonth])
         ->where('user_id', $user->id)
         ->get();
 
+        // 日付をキーにした連想配列にする
+        $attendances = $attendances->keyBy(function ($attendance) {
+            return Carbon::parse($attendance->start_time)->toDateString();
+        });
+
+        // 各勤怠に最新リクエストを付与
+        foreach ($attendances as $attendance) {
+            $attendance->latest_request = AttendanceRequest::where('attendance_id', $attendance->id)->latest()->first();
+        }
+
         return view('admin.staff_attendance_list', compact(
-            'user', 'attendances', 'year', 'month', 'previousMonth', 'nextMonth'
+            'user', 'attendances', 'year', 'month',
+            'previousMonth', 'nextMonth', 'startOfMonth', 'endOfMonth'
         ));
     }
 
-
-
-
-
-    public function approve($attendance_id)
+    // CSV機能
+    public function exportStaffAttendanceCSV(Request $request, $user_id)
     {
+        $user = User::findOrFail($user_id);
+
+        $year = $request->query('year') ? (int)$request->query('year') : now()->year;
+        $month = $request->query('month') ? (int)$request->query('month') : now()->month;
+
+        $startOfMonth = Carbon::create($year, $month)->startOfMonth();
+        $endOfMonth = Carbon::create($year, $month)->endOfMonth();
+
+        $attendances = Attendance::with('rests')
+            ->whereBetween('start_time', [$startOfMonth, $endOfMonth])
+            ->where('user_id', $user->id)
+            ->get();
+
+        // CSV をストリームで生成
+        $response = new StreamedResponse(function () use ($attendances, $user, $year, $month) {
+            $handle = fopen('php://output', 'w');
+
+            // ヘッダ
+            fputcsv($handle, ['日付', '出勤', '退勤', '休憩時間', '合計勤務時間']);
+
+            foreach ($attendances as $attendance) {
+                $date = Carbon::parse($attendance->start_time)->format('Y-m-d');
+                $start = $attendance->start_time ? Carbon::parse($attendance->start_time)->format('H:i') : '';
+                $end = $attendance->end_time ? Carbon::parse($attendance->end_time)->format('H:i') : '';
+
+                // 休憩時間計算
+                $breakMinutes = 0;
+                foreach ($attendance->rests as $rest) {
+                    if ($rest->break_start_time && $rest->break_end_time) {
+                        $breakMinutes += Carbon::parse($rest->break_start_time)
+                            ->diffInMinutes(Carbon::parse($rest->break_end_time));
+                    }
+                }
+
+                $breakTime = $breakMinutes > 0 ? floor($breakMinutes / 60) . ':' . sprintf('%02d', $breakMinutes % 60) : '';
+
+                // 勤務時間計算
+                $totalMinutes = 0;
+                if ($attendance->start_time && $attendance->end_time) {
+                    $totalMinutes = Carbon::parse($attendance->start_time)
+                        ->diffInMinutes(Carbon::parse($attendance->end_time)) - $breakMinutes;
+                }
+                $totalTime = $totalMinutes > 0 ? floor($totalMinutes / 60) . ':' . sprintf('%02d', $totalMinutes % 60) : '';
+
+                fputcsv($handle, [$date, $start, $end, $breakTime, $totalTime]);
+            }
+
+            fclose($handle);
+        });
+
+        $fileName = "{$user->name}_{$year}_{$month}_attendances.csv";
+
+        $response->headers->set('Content-Type', 'text/csv');
+        $response->headers->set('Content-Disposition', "attachment; filename={$fileName}");
+
+        return $response;
+    }
+
+
+    // adminが勤怠データを新規作成する
+    // public function attendance_create($user_id)
+    // {
+    //     $user = User::findOrFail($user_id);
+
+    //     $rests = [
+    //         ['break_start_time' => null, 'break_end_time' => null],
+    //     ];
+
+    //     $attendance = Attendance::where('user_id', $user_id)
+    //                 ->latest('date')
+    //                 ->first();
+
+    //     return view('attendance_create', compact('user','rests', 'attendance'));
+    // }
+
+    // public function attendance_store(AttendanceRequest $request)
+    // {
+
+    // }
+
+
+    public function approve(Request $request, $attendance_id)
+    {
+        // 勤怠データと関連申請を取得
         $attendance = Attendance::findOrFail($attendance_id);
+        $attendanceRequest = AttendanceRequest::where('attendance_id', $attendance_id)
+            ->where('status', 'pending')
+            ->latest()
+            ->first();
 
-        // 最新の申請を取得
-        $request = AttendanceRequest::where('attendance_id', $attendance_id)
-                    ->where('status', 'pending')
-                    ->latest()
-                    ->first();
-
-        if (!$request) {
+        if (!$attendanceRequest) {
             return redirect()->back()->with('error', '申請データが見つかりませんでした。');
         }
 
-        if ($request->edit_data) {
-            $editData = json_decode($request->edit_data, true);
-
-            foreach ($editData as $key => $value) {
-                if (in_array($key, ['start_time', 'end_time', 'break_start_time', 'break_end_time', 'break2_start_time', 'break2_end_time'])) {
-                    $attendance->$key = $value;
+        //  勤怠データを更新
+        if ($attendanceRequest->edit_data) {
+            $editData = json_decode($attendanceRequest->edit_data, true);
+            foreach (['start_time', 'end_time', 'reason'] as $key) {
+                if (isset($editData[$key])) {
+                    $attendance->$key = $editData[$key];
                 }
             }
+        } else {
+            // 個別カラムがある場合
+            $attendance->start_time = $attendanceRequest->requested_start_time ?? $attendance->start_time;
+            $attendance->end_time   = $attendanceRequest->requested_end_time ?? $attendance->end_time;
+            $attendance->reason     = $attendanceRequest->requested_reason ?? $attendance->reason;
+        }
 
-            // 備考（理由）の更新
-            if (isset($editData['reason'])) {
-                $attendance->reason = $editData['reason'];
-            }
+        $attendance->is_approval = true;
+        $attendance->status = 'approved';
+        $attendance->save();
 
-            // 勤怠データを承認済みに更新
-            $attendance->is_approval = true;
-            $attendance->status = 'approved';
-            $attendance->save();
+        //  既存の休憩を削除
+        Rest::where('attendance_id', $attendance_id)->delete();
 
-            // 申請レコードを更新
-            $request->update([
-                'status' => 'approved',
-                'approved_by' => Auth::id(),
-                'approved_at' => now(),
+        //  break_requests を反映
+        $breakRequests = BreakRequest::where('attendance_id', $attendance_id)
+            ->where('status', 'pending')
+            ->get();
+
+        foreach ($breakRequests as $breakRequest) {
+            Rest::create([
+                'attendance_id'      => $attendance_id,
+                'break_start_time'   => $breakRequest->requested_break_start_time,
+                'break_end_time'     => $breakRequest->requested_break_end_time,
+            ]);
+
+            $breakRequest->update([
+                'status'       => 'approved',
+                'approved_by'  => Auth::id(),
+                'approved_at'  => now(),
             ]);
         }
 
-        return redirect()->route('requested_confirm', ['request_id' => $request->id])
-                        ->with('success', '申請を承認しました');
+        //  attendance_request の status を更新
+        $attendanceRequest->update([
+            'status'       => 'approved',
+            'approved_by'  => Auth::id(),
+            'approved_at'  => now(),
+        ]);
+
+        //  完了リダイレクト
+        return redirect()->route('requested_confirm', ['request_id' => $attendanceRequest->id])
+            ->with('success', '申請を承認しました');
     }
 }

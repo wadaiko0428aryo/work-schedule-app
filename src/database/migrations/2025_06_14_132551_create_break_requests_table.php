@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-
-class CreateAttendanceRequestsTable extends Migration
+class CreateBreakRequestsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,17 +13,17 @@ class CreateAttendanceRequestsTable extends Migration
      */
     public function up()
     {
-        Schema::create('attendance_requests', function (Blueprint $table) {
+        Schema::create('break_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('attendance_request_id')->constrained()->onDelete('cascade');
             $table->foreignId('attendance_id')->constrained()->onDelete('cascade');
             $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();//承認した管理者のID
 
             $table->enum('status', ['pending', 'approved'])->default('pending');//状態を「pending（申請中）」か「approved（承認済み）」かでステータスを管理
 
-            $table->dateTime('requested_start_time')->nullable();
-            $table->dateTime('requested_end_time')->nullable();
-            $table->text('requested_reason')->nullable();
+            $table->dateTime('requested_break_start_time')->nullable();
+            $table->dateTime('requested_break_end_time')->nullable();
+
 
             $table->json('edit_data')->nullable(); // 修正内容
 
@@ -41,6 +40,6 @@ class CreateAttendanceRequestsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('attendance_requests');
+        Schema::dropIfExists('break_requests');
     }
 }

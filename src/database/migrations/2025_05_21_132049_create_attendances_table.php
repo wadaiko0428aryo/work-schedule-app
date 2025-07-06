@@ -20,8 +20,7 @@ class CreateAttendancesTable extends Migration
 
             $table->dateTime('start_time')->nullable();
             $table->dateTime('end_time')->nullable();
-            $table->dateTime('break_start_time')->nullable();
-            $table->dateTime('break_end_time')->nullable();
+
             $table->text('reason')->nullable();
 
             $table->boolean('is_approval')->default(false); //勤怠情報が管理者により承認されたか確認する。

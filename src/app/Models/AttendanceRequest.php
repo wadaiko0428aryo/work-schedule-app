@@ -40,4 +40,9 @@ class AttendanceRequest extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function breakRequests()
+    {
+        return $this->hasMany(BreakRequest::class, 'attendance_request_id');
+    }
 }

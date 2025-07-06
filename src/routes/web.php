@@ -21,16 +21,19 @@ Route::post('/auth', [AuthController::class, 'auth'])->name('auth');
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/attendance_list', [AdminController::class, 'attendance_list'])->name('attendance_list');
 
-    Route::get('/attendance_list/attendance_detail/{attendance_id}', [AdminController::class, 'attendance_detail'])->name('attendance_detail');
+    // Route::get('/attendance_list/attendance_detail/{attendance_id}', [AdminController::class, 'attendance_detail'])->name('attendance_detail');
 
     Route::get('/staff_list', [AdminController::class, 'staff_list'])->name('staff_list');
 
     Route::get('/staff_list/staff_attendance_list/{user_id}', [AdminController::class, 'staff_attendance_list'])->name('staff_attendance_list');
 
+    Route::get('/staff_list/staff_attendance_list/{user_id}/export', [AdminController::class, 'exportStaffAttendanceCSV'])->name('staff_attendance_list.export');
 
+    // Route::get('staff_list/staff_attendance_list/attendance_create/{user_id}', [AdminController::class, 'attendance_create'])->name('attendance_create');
 
-    Route::get('/approval', [AdminController::class, 'approval'])->name('approval');
-    Route::post('/approve/{attendance_id}', [AdminController::class, 'approve'])->name('attendance.approve');
+    // Route::post('/staff_list/staff_attendance_list/attendance_store', [AdminController::class, 'attendanceStore'])
+    //     ->name('attendance_store');
+
 
 });
 
@@ -49,6 +52,7 @@ Route::middleware('auth')->group(function()
     Route::get('/attendance_list', [AttendanceController::class, 'attendance_list'])->name('attendance_list');
 
     Route::get('/attendance_list/attendance_detail/{attendance_id}', [AttendanceController::class, 'attendance_detail'])->name('attendance_detail');
+
     Route::post('/attendance/request/{attendance_id}', [AttendanceController::class, 'request_edit'])->name('attendance.request_edit');
 
 

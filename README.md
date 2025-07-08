@@ -82,6 +82,12 @@ Http://localhost/attendance
 8. シーディングの実行
 > php artisan db::seed
 
+9. 管理者のemailとpassword
+- email
+> admin@example.com
+- password
+> adminpass
+
 
 ※メールの設定は必要に応じて行ってください。
 

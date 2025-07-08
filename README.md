@@ -70,9 +70,6 @@ Http://localhost/attendance
 > - MAIL_FROM_ADDRESS="test@example.com"
 > - MAIL_FROM_NAME="勤怠アプリ"
 
-＜ここから！！！＞
-
-   
 6. アプリケーションキーの作成
 > php artisan key:generate
 
@@ -94,5 +91,5 @@ Http://localhost/attendance
 
 
 URL
-開発環境：http://localhost/attendance
-phpMyAdmin:：http://localhost:8080/
+- 開発環境：http://localhost/attendance
+- phpMyAdmin:：http://localhost:8080/

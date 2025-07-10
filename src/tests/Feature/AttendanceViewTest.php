@@ -237,7 +237,7 @@ class AttendanceViewTest extends TestCase
             ]);
 
         $response->assertSessionHasErrors(['break_start_time.0']);
-        $this->assertStringContainsString('休憩開始が終了より後になっています', session('errors')->first('break_start_time.0'));
+        $this->assertStringContainsString('休憩開始が勤務終了より後になっています', session('errors')->first('break_start_time.0'));
     }
 
     // reasonを未入力のエラー

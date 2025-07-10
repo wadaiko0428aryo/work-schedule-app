@@ -85,6 +85,9 @@ Http://localhost/attendance
 - password
 > adminpass
 
+10. テスト用マイグレーションの実行
+> php artisan migrate --testing
+
 
 ※メールの設定は必要に応じて行ってください。
 

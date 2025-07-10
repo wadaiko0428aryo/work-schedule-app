@@ -86,7 +86,7 @@ Http://localhost/attendance
 > adminpass
 
 10. テスト用マイグレーションの実行
-> php artisan migrate --testing
+> php artisan migrate --env=testing
 
 
 ※メールの設定は必要に応じて行ってください。

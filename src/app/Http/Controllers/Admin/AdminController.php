@@ -19,13 +19,23 @@ class AdminController extends Controller
     // 勤怠一覧画面の表示
     public function attendance_list(Request $request)
     {
-        // クエリパラメータから日付を取得、なければ今日
+        // クエリパラメータ（URL）から日付を取得、指定がなければ今日の日付データを表示
+        // $request->query('date') => URLの中にdate=⚪︎⚪︎があるか調べる
+        // Carbon::parse => URLに⚪︎⚪︎があればその文字を(2025-07-10)のような「日付」としてつかえるように変換する
+        // Carbon::today() => URLに日付がなかった場合「今日の日付」を表示
+        // AA ？　　BB ：　　CC => Aの条件で、もしtrueなら　B　、falseなら　C //
         $date = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
 
+        // $date（当日）の一日前を（2025-07-09）のように文字列にして$previousDateに入れる
         $previousDate = $date->copy()->subDay()->toDateString();
+
+        // $date（当日）の一日後を（2025-07-11）のように文字列にして$nextDateにいれる
         $nextDate = $date->copy()->addDay()->toDateString();
+
+        // 今日の日付（$date）をそのまま$currentDateに代入
         $currentDate = $date;
 
+        // Attendanceモデルから紐づくuser情報も一緒に取得し、start_timeの日付が$dateと一致するデータを絞り込みその日付のページに表示する
         $attendances = Attendance::with('user')
         ->whereDate('start_time', $date)->get();
 

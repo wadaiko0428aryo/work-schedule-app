@@ -54,33 +54,34 @@ class AdminController extends Controller
     // スタッフ別勤怠一覧画面の表示
     public function staff_attendance_list(Request $request, $user_id)
     {
+        // Userモデルから$user_idを探す or 失敗ならエラーを出す
         $user = User::findOrFail($user_id);
 
-        // クエリパラメータから年月を取得、なければ今日
+        // クエリパラメータから年月を正数（int）で取得、なければ今日の年月
         $year = $request->query('year') ? (int)$request->query('year') : now()->year;
         $month = $request->query('month') ? (int)$request->query('month') : now()->month;
 
 
-        // 月始・月末
+        // その年の月始・月末を作成
         $startOfMonth = Carbon::create($year, $month)->startOfMonth();
         $endOfMonth = Carbon::create($year, $month)->endOfMonth();
 
-        // 前月・翌月
+        // 前月・翌月の初日を取得
         $previousMonth = $startOfMonth->copy()->subMonth();
         $nextMonth = $startOfMonth->copy()->addMonth();
 
-         // 勤怠データ取得（start_time が該当月にあるもの）
+         // userがその月に記録した$startOfMonthと$endOfMonthの間の全ての勤怠データ取得
         $attendances = Attendance::with('user', 'rests')
         ->whereBetween('start_time', [$startOfMonth, $endOfMonth])
         ->where('user_id', $user->id)
         ->get();
 
-        // 日付をキーにした連想配列にする
+        // start_timeをキーにした連想配列にする（日付から他のデータを検索できる）
         $attendances = $attendances->keyBy(function ($attendance) {
             return Carbon::parse($attendance->start_time)->toDateString();
         });
 
-        // 各勤怠に最新リクエストを付与
+        // attendance_requestsテーブルの中からattendance_idが一致する申請データをさがして、created_atの順でlatest（最新）のデータをfirst（一つ取得）する。　その申請データを$attendance->latest_requestに代入する。
         foreach ($attendances as $attendance) {
             $attendance->latest_request = AttendanceRequest::where('attendance_id', $attendance->id)->latest()->first();
         }

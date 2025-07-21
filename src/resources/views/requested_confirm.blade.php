@@ -20,7 +20,9 @@
 </div>
 
 @php
-    $latestRequest = $attendance->requests()->latest()->first();
+    $latestRequest = $attendance->requests()
+    ->latest()
+    ->first();
     $editData = $request->edit_data ? json_decode($request->edit_data, true) : [];
 
 

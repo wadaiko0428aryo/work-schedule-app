@@ -23,16 +23,19 @@ class Attendance extends Model
         'date' => 'date',
     ];
 
+    // AttendanceがUserを参照する（子->親）
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // Attendanceは複数のAttendanceRequestを持つ（親->複数の子）
         public function requests()
     {
         return $this->hasMany(AttendanceRequest::class);
     }
 
+    // attendanceに紐づくAttendanceRequestのうち一番新しい１件を取得
         public function latestRequest()
     {
         return $this->hasOne(AttendanceRequest::class)->latestOfMany();

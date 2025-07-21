@@ -19,30 +19,30 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        // 今日の勤怠レコード取得
-        $attendance = Attendance::where('user_id', $user->id)
-            ->whereDate('date', now()->toDateString())
-            ->first();
+        // ログインuserの今日の勤怠レコード取得
+        $attendance = Attendance::where('user_id', $user->id)  //現在ログインしているuserを対象
+            ->whereDate('date', now()->toDateString())    //dateカラムが今日の日付（[Y-m-d形式]（now()->toDateString()））で絞り込み
+            ->first();  //条件に合致する複数のデータから最初の１件を取得（なければnull）
 
-        // 初期値
+        // 初期値（出勤前）
         $status = 'before_work';
 
-        if ($attendance) {
+        if ($attendance) {   //勤怠レコードがあるか確認
 
-            // 休憩状態をbreaksテーブルから取得
+            // 休憩（restテーブル）の中で最新のレコードを取得（今休憩中か判断）
             $latest_break = $attendance->rests()->latest()->first();
 
+            // もし最新休憩（latest_break）が存在していて、その休憩が終了していなければ（!$latest_break->break_end_time）
             if ($latest_break && !$latest_break->break_end_time) {
-                // 休憩中
-                $status = 'on_break';
+                $status = 'on_break';   // 休憩中
             }
+            // もし出勤していて、かつ、退勤していなければ
             elseif ($attendance->start_time && !$attendance->end_time) {
-                // 勤務中
-                $status = 'working';
+                $status = 'working';  // 勤務中
             }
+            // もし退勤していたら
             elseif ($attendance->end_time) {
-                // 退勤済み
-                $status = 'finished';
+                $status = 'finished';  // 退勤済み
             }
         }
 
@@ -52,12 +52,14 @@ class AttendanceController extends Controller
     // ②出勤処理
     public function start(Request $request)
     {
+        // ログイン中のuser情報を取得
         $user = Auth::user();
 
+        // Attendanceモデルで新レコードを作成
         Attendance::create([
-            'user_id' => $user->id,
-            'date' => now()->toDateString(),
-            'start_time' => now(),
+            'user_id' => $user->id,  //現在ログイン中のuserIDを取得
+            'date' => now()->toDateString(),  //今日の日付のみ取得
+            'start_time' => now(),  //今現在の日時（年月日時分秒）を取得
         ]);
 
         return redirect()->route('attendance');
@@ -68,14 +70,15 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        // 今日の勤怠を取得
-        $attendance = Attendance::where('user_id', $user->id)
-            ->whereDate('date', now()->toDateString())
+        // 今日のuserの勤怠データを１件取得
+        $attendance = Attendance::where('user_id', $user->id)  //attendanceテーブル内の「user_id」が現在のログインuserと一致しているレコードを取得（このuserの下記の条件のデータが欲しい！）
+            ->whereDate('date', now()->toDateString())  //日付部分で比較(whereDate)し、「date」の現在時刻を「Y-M-D」の形式で取得
             ->first();
 
+        // もし、勤怠データが存在し、かつ、勤怠データに退勤レコードがなければ（出勤済み・退勤前）
         if ($attendance && !$attendance->end_time) {
-            $attendance->end_time = now();
-            $attendance->save();
+            $attendance->end_time = now();  //退勤時刻を現在時刻で取得する
+            $attendance->save();  //取得した退勤レコードをattendanceに保存する
         }
         return redirect()->route('attendance');
     }
@@ -85,11 +88,14 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        $attendance = Attendance::where('user_id', $user->id)->whereDate('date', now()->toDateString())->first();
+        $attendance = Attendance::where('user_id', $user->id)
+            ->whereDate('date', now()->toDateString())
+            ->first();
 
-        // すでに未終了の休憩がないことを確認
+        // もし勤怠データ（$attendance）の中に関連付けられている休憩データ（rests）内で「break_end_time」が終了していない（null）な休憩データが存在していたら（休憩は開始しているがまだ終了していない状態をチェック（exists()） ）
         if($attendance->rests()->whereNull('break_end_time')->exists())
         {
+            // trueの場合、再度休憩開始にならないように前のページに戻り、errorメッセージを表示
             return back()->with('error', '既に休憩中です');
         }
 
@@ -106,18 +112,27 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        $attendance = Attendance::where('user_id', $user->id)->whereDate('date', now()->toDateString())->first();
+        $attendance = Attendance::where('user_id', $user->id)
+            ->whereDate('date', now()->toDateString())
+            ->first();
 
-        // 未終了の休憩を取得
-        $rest = $attendance->rests()->whereNull('break_end_time')->latest()->first();
+        // attendance内のrestsデータの中から休憩終了時刻（break_end_time）がないcreated_at順の最新のレコードを１件取得
+        $rest = $attendance->rests()
+            ->whereNull('break_end_time')
+            ->latest()
+            ->first();
 
+            // 下記の「rest」は上記で記述した、「break_end_timeがnullの最新の休憩レコード」という意味を持っている
+            // もしまだ終了していない休憩レコードが存在していなければ（休憩中じゃない場合）
         if(!$rest)
         {
+            //trueの場合元のページに戻りerrorを表示
             return back()->with('error', '休憩中ではありません');
         }
 
+        // まだ終了していない休憩レコード（休憩中レコード）を更新する
         $rest->update([
-            'break_end_time' => now(),
+            'break_end_time' => now(),  //現在時刻を休憩終了時間に保存（break_end_timeカラムに更新）
         ]);
 
         return redirect()->route('attendance');
@@ -337,7 +352,8 @@ class AttendanceController extends Controller
     // 11.修正内容確認画面
     public function requested_confirm($request_id)
     {
-        $request = AttendanceRequest::with('attendance.user', 'breakRequests')->findOrFail($request_id);
+        $request = AttendanceRequest::with('attendance.user', 'breakRequests')
+        ->findOrFail($request_id);
 
         $attendance = $request->attendance;
 
